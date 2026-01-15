@@ -1,7 +1,19 @@
-import { ArrowDown } from "lucide-react";
+import { ArrowDown, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useState, useRef } from "react";
+import heroVideo from "@/assets/hero-bg-video.mp4";
 
 const Hero = () => {
+  const [isMuted, setIsMuted] = useState(true);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  const toggleMute = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = !videoRef.current.muted;
+      setIsMuted(!isMuted);
+    }
+  };
+
   const scrollToPortfolio = () => {
     const element = document.querySelector("#portfolio");
     if (element) {
@@ -18,21 +30,42 @@ const Hero = () => {
 
   return (
     <section className="min-h-screen flex items-center justify-center relative overflow-hidden">
-      {/* Subtle background pattern */}
-      <div className="absolute inset-0 bg-gradient-to-b from-secondary/30 to-background" />
+      {/* Background Video */}
+      <video
+        ref={videoRef}
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="absolute inset-0 w-full h-full object-cover"
+      >
+        <source src={heroVideo} type="video/mp4" />
+      </video>
+      
+      {/* Overlay for readability */}
+      <div className="absolute inset-0 bg-background/70 backdrop-blur-sm" />
+      
+      {/* Mute/Unmute Button */}
+      <button
+        onClick={toggleMute}
+        className="absolute top-24 right-6 z-20 p-3 rounded-full bg-card/80 hover:bg-card transition-colors border border-border"
+        aria-label={isMuted ? "Unmute" : "Mute"}
+      >
+        {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+      </button>
       
       <div className="container mx-auto px-6 py-20 relative z-10">
         <div className="max-w-3xl mx-auto text-center">
           <p className="text-sm uppercase tracking-[0.3em] text-muted-foreground mb-6 animate-fade-in">
-            Professional Audio Services
+            Emerging Sound Engineer
           </p>
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-light tracking-tight text-foreground mb-6 animate-fade-in">
-            Crafting Sound with
-            <span className="block font-medium text-primary">Precision & Soul</span>
+            Passionate About
+            <span className="block font-medium text-primary">Every Frequency</span>
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground max-w-xl mx-auto mb-10 leading-relaxed animate-fade-in">
-            Mixing and mastering engineer dedicated to bringing your vision to life 
-            with clarity, warmth, and professional polish.
+            A fresh voice in audio engineering, bringing unwavering dedication and 
+            a deep love for sound to every project. Ready to craft your sonic vision.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in">
             <Button
@@ -40,7 +73,7 @@ const Hero = () => {
               size="lg"
               className="rounded-full px-8"
             >
-              View My Work
+              Explore My Work
             </Button>
             <Button
               onClick={scrollToContact}
@@ -48,7 +81,7 @@ const Hero = () => {
               size="lg"
               className="rounded-full px-8"
             >
-              Let's Connect
+              Let's Create Together
             </Button>
           </div>
         </div>
@@ -57,7 +90,7 @@ const Hero = () => {
       {/* Scroll indicator */}
       <button
         onClick={scrollToPortfolio}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 text-muted-foreground hover:text-foreground transition-colors animate-bounce"
+        className="absolute bottom-8 left-1/2 -translate-x-1/2 text-muted-foreground hover:text-foreground transition-colors animate-bounce z-10"
         aria-label="Scroll down"
       >
         <ArrowDown size={24} />
