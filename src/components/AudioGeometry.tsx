@@ -1,7 +1,94 @@
-import { useRef, useState } from "react";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { MeshDistortMaterial, GradientTexture } from "@react-three/drei";
+import { useRef, useState, useMemo } from "react";
+import { Canvas, useFrame, useThree, extend } from "@react-three/fiber";
 import * as THREE from "three";
+
+// Custom shader material for wave texture
+class WaveMaterial extends THREE.ShaderMaterial {
+  constructor() {
+    super({
+      uniforms: {
+        uTime: { value: 0 },
+        uHover: { value: 0 },
+        uColor1: { value: new THREE.Color("#c9a88a") },
+        uColor2: { value: new THREE.Color("#a67c52") },
+        uColor3: { value: new THREE.Color("#d4b896") },
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        varying vec3 vPosition;
+        varying vec3 vNormal;
+        uniform float uTime;
+        uniform float uHover;
+        
+        void main() {
+          vUv = uv;
+          vPosition = position;
+          vNormal = normal;
+          
+          // Wave distortion on vertices
+          vec3 pos = position;
+          float wave = sin(pos.x * 3.0 + uTime * 2.0) * 0.1;
+          wave += sin(pos.y * 4.0 + uTime * 1.5) * 0.08;
+          wave += sin(pos.z * 2.5 + uTime * 2.5) * 0.06;
+          pos += normal * wave * (1.0 + uHover * 0.5);
+          
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+        }
+      `,
+      fragmentShader: `
+        varying vec2 vUv;
+        varying vec3 vPosition;
+        varying vec3 vNormal;
+        uniform float uTime;
+        uniform float uHover;
+        uniform vec3 uColor1;
+        uniform vec3 uColor2;
+        uniform vec3 uColor3;
+        
+        void main() {
+          // Create wave pattern
+          float wave1 = sin(vUv.x * 20.0 + uTime * 3.0) * 0.5 + 0.5;
+          float wave2 = sin(vUv.y * 15.0 - uTime * 2.0) * 0.5 + 0.5;
+          float wave3 = sin((vUv.x + vUv.y) * 10.0 + uTime * 2.5) * 0.5 + 0.5;
+          
+          // Combine waves
+          float pattern = wave1 * 0.4 + wave2 * 0.3 + wave3 * 0.3;
+          
+          // Add ripple effect from center
+          float dist = length(vUv - 0.5);
+          float ripple = sin(dist * 30.0 - uTime * 4.0) * 0.5 + 0.5;
+          pattern = mix(pattern, ripple, 0.3);
+          
+          // Color mixing based on pattern
+          vec3 color = mix(uColor1, uColor2, pattern);
+          color = mix(color, uColor3, wave3 * 0.5);
+          
+          // Add shimmer on hover
+          float shimmer = sin(vUv.x * 50.0 + uTime * 5.0) * sin(vUv.y * 50.0 + uTime * 4.0);
+          color += shimmer * uHover * 0.1;
+          
+          // Fresnel effect for edge glow
+          vec3 viewDir = normalize(cameraPosition - vPosition);
+          float fresnel = pow(1.0 - dot(vNormal, viewDir), 2.0);
+          color += uColor3 * fresnel * 0.3;
+          
+          gl_FragColor = vec4(color, 1.0);
+        }
+      `,
+      side: THREE.DoubleSide,
+    });
+  }
+}
+
+extend({ WaveMaterial });
+
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      waveMaterial: any;
+    }
+  }
+}
 
 interface AnimatedMeshProps {
   scrollProgress: number;
@@ -9,21 +96,30 @@ interface AnimatedMeshProps {
 
 const AnimatedMesh = ({ scrollProgress }: AnimatedMeshProps) => {
   const meshRef = useRef<THREE.Mesh>(null);
+  const materialRef = useRef<WaveMaterial>(null);
   const { mouse, viewport } = useThree();
   const [hovered, setHovered] = useState(false);
   
   useFrame((state) => {
-    if (!meshRef.current) return;
+    if (!meshRef.current || !materialRef.current) return;
     
     const time = state.clock.getElapsedTime();
     
-    // Infinite rotation animation
-    meshRef.current.rotation.x = time * 0.2 + scrollProgress * Math.PI;
-    meshRef.current.rotation.y = time * 0.3 + scrollProgress * Math.PI * 0.5;
-    meshRef.current.rotation.z = time * 0.1;
+    // Update shader uniforms
+    materialRef.current.uniforms.uTime.value = time;
+    materialRef.current.uniforms.uHover.value = THREE.MathUtils.lerp(
+      materialRef.current.uniforms.uHover.value,
+      hovered ? 1 : 0,
+      0.1
+    );
     
-    // Hover effect - scale up and move towards cursor
-    const targetScale = hovered ? 1.2 : 1;
+    // Infinite rotation animation
+    meshRef.current.rotation.x = time * 0.15 + scrollProgress * Math.PI;
+    meshRef.current.rotation.y = time * 0.25 + scrollProgress * Math.PI * 0.5;
+    meshRef.current.rotation.z = time * 0.08;
+    
+    // Hover effect - scale up
+    const targetScale = hovered ? 1.15 : 1;
     meshRef.current.scale.lerp(
       new THREE.Vector3(targetScale, targetScale, targetScale),
       0.1
@@ -31,8 +127,8 @@ const AnimatedMesh = ({ scrollProgress }: AnimatedMeshProps) => {
     
     // Follow mouse slightly when hovered
     if (hovered) {
-      const targetX = (mouse.x * viewport.width) / 8;
-      const targetY = (mouse.y * viewport.height) / 8;
+      const targetX = (mouse.x * viewport.width) / 10;
+      const targetY = (mouse.y * viewport.height) / 10;
       meshRef.current.position.x = THREE.MathUtils.lerp(meshRef.current.position.x, targetX, 0.05);
       meshRef.current.position.y = THREE.MathUtils.lerp(meshRef.current.position.y, targetY, 0.05);
     } else {
@@ -40,10 +136,10 @@ const AnimatedMesh = ({ scrollProgress }: AnimatedMeshProps) => {
       meshRef.current.position.y = THREE.MathUtils.lerp(meshRef.current.position.y, 0, 0.05);
     }
     
-    // Scroll effect - move back and scale down
-    const scrollScale = 1 - scrollProgress * 0.5;
-    meshRef.current.scale.multiplyScalar(scrollScale > 0.3 ? 1 : scrollScale / 0.3);
+    // Scroll effect
     meshRef.current.position.z = -scrollProgress * 3;
+    const scrollScale = Math.max(0.3, 1 - scrollProgress * 0.7);
+    meshRef.current.scale.multiplyScalar(scrollScale);
   });
 
   return (
@@ -52,58 +148,50 @@ const AnimatedMesh = ({ scrollProgress }: AnimatedMeshProps) => {
       onPointerOver={() => setHovered(true)}
       onPointerOut={() => setHovered(false)}
     >
-      <torusKnotGeometry args={[1, 0.35, 200, 32, 2, 3]} />
-      <MeshDistortMaterial
-        speed={2}
-        distort={hovered ? 0.4 : 0.2}
-        radius={1}
-      >
-        <GradientTexture
-          stops={[0, 0.5, 1]}
-          colors={["#c9a88a", "#d4b896", "#a67c52"]}
-        />
-      </MeshDistortMaterial>
+      <torusKnotGeometry args={[1, 0.4, 256, 64, 2, 3]} />
+      <waveMaterial ref={materialRef} />
     </mesh>
   );
 };
 
-// Floating particles around the main object
-const FloatingParticles = () => {
-  const ref = useRef<THREE.Points>(null);
-  const count = 50;
+// Animated wave rings around the object
+const WaveRings = () => {
+  const groupRef = useRef<THREE.Group>(null);
+  const ringCount = 3;
   
-  const positions = new Float32Array(count * 3);
-  for (let i = 0; i < count; i++) {
-    const angle = (i / count) * Math.PI * 2;
-    const radius = 2.5 + Math.random() * 0.5;
-    positions[i * 3] = Math.cos(angle) * radius;
-    positions[i * 3 + 1] = (Math.random() - 0.5) * 2;
-    positions[i * 3 + 2] = Math.sin(angle) * radius;
-  }
+  const rings = useMemo(() => {
+    return Array.from({ length: ringCount }, (_, i) => ({
+      radius: 2 + i * 0.5,
+      tube: 0.02,
+      offset: i * 0.5,
+    }));
+  }, []);
 
   useFrame((state) => {
-    if (!ref.current) return;
-    ref.current.rotation.y = state.clock.getElapsedTime() * 0.1;
+    if (!groupRef.current) return;
+    const time = state.clock.getElapsedTime();
+    
+    groupRef.current.children.forEach((ring, i) => {
+      ring.rotation.x = Math.sin(time * 0.5 + i) * 0.3;
+      ring.rotation.y = time * 0.2 * (i % 2 === 0 ? 1 : -1);
+      const scale = 1 + Math.sin(time * 2 + i * 0.5) * 0.1;
+      ring.scale.set(scale, scale, scale);
+    });
   });
 
   return (
-    <points ref={ref}>
-      <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          count={count}
-          array={positions}
-          itemSize={3}
-        />
-      </bufferGeometry>
-      <pointsMaterial
-        size={0.05}
-        color="#c9a88a"
-        transparent
-        opacity={0.6}
-        sizeAttenuation
-      />
-    </points>
+    <group ref={groupRef}>
+      {rings.map((ring, i) => (
+        <mesh key={i}>
+          <torusGeometry args={[ring.radius, ring.tube, 16, 100]} />
+          <meshBasicMaterial 
+            color="#c9a88a" 
+            transparent 
+            opacity={0.3 - i * 0.08} 
+          />
+        </mesh>
+      ))}
+    </group>
   );
 };
 
@@ -119,11 +207,11 @@ const AudioGeometry = ({ scrollProgress = 0 }: AudioGeometryProps) => {
         style={{ background: "transparent" }}
         dpr={[1, 2]}
       >
-        <ambientLight intensity={0.5} />
-        <directionalLight position={[10, 10, 5]} intensity={1} />
-        <pointLight position={[-10, -10, -5]} intensity={0.5} color="#c9a88a" />
+        <ambientLight intensity={0.6} />
+        <directionalLight position={[10, 10, 5]} intensity={0.8} />
+        <pointLight position={[-10, -10, -5]} intensity={0.4} color="#c9a88a" />
         <AnimatedMesh scrollProgress={scrollProgress} />
-        <FloatingParticles />
+        <WaveRings />
       </Canvas>
     </div>
   );
