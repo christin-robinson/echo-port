@@ -1,9 +1,22 @@
 import { ArrowDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Suspense } from "react";
-import ParticleSphere from "./ParticleSphere";
+import { Suspense, useState, useEffect } from "react";
+import AudioGeometry from "./AudioGeometry";
 
 const Hero = () => {
+  const [scrollProgress, setScrollProgress] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const heroHeight = window.innerHeight;
+      const scrollY = window.scrollY;
+      const progress = Math.min(scrollY / heroHeight, 1);
+      setScrollProgress(progress);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
   const scrollToPortfolio = () => {
     const element = document.querySelector("#portfolio");
     if (element) {
@@ -20,9 +33,9 @@ const Hero = () => {
 
   return (
     <section className="min-h-screen flex items-center justify-center relative overflow-hidden">
-      {/* 3D Particle Sphere Background */}
+      {/* 3D Audio Geometry Background */}
       <Suspense fallback={<div className="absolute inset-0 bg-background" />}>
-        <ParticleSphere />
+        <AudioGeometry scrollProgress={scrollProgress} />
       </Suspense>
       
       {/* Overlay for readability */}
