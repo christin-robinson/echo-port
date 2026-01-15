@@ -148,7 +148,7 @@ const AnimatedMesh = ({ scrollProgress }: AnimatedMeshProps) => {
       onPointerOver={() => setHovered(true)}
       onPointerOut={() => setHovered(false)}
     >
-      <torusKnotGeometry args={[1, 0.4, 256, 64, 2, 3]} />
+      <icosahedronGeometry args={[1.5, 64]} />
       <waveMaterial ref={materialRef} />
     </mesh>
   );
