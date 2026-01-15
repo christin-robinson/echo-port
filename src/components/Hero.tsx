@@ -1,19 +1,9 @@
-import { ArrowDown, Volume2, VolumeX } from "lucide-react";
+import { ArrowDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState, useRef } from "react";
-import heroVideo from "@/assets/hero-bg-video.mp4";
+import { Suspense } from "react";
+import ParticleSphere from "./ParticleSphere";
 
 const Hero = () => {
-  const [isMuted, setIsMuted] = useState(true);
-  const videoRef = useRef<HTMLVideoElement>(null);
-
-  const toggleMute = () => {
-    if (videoRef.current) {
-      videoRef.current.muted = !videoRef.current.muted;
-      setIsMuted(!isMuted);
-    }
-  };
-
   const scrollToPortfolio = () => {
     const element = document.querySelector("#portfolio");
     if (element) {
@@ -30,29 +20,13 @@ const Hero = () => {
 
   return (
     <section className="min-h-screen flex items-center justify-center relative overflow-hidden">
-      {/* Background Video */}
-      <video
-        ref={videoRef}
-        autoPlay
-        loop
-        muted
-        playsInline
-        className="absolute inset-0 w-full h-full object-cover"
-      >
-        <source src={heroVideo} type="video/mp4" />
-      </video>
+      {/* 3D Particle Sphere Background */}
+      <Suspense fallback={<div className="absolute inset-0 bg-background" />}>
+        <ParticleSphere />
+      </Suspense>
       
       {/* Overlay for readability */}
-      <div className="absolute inset-0 bg-background/70 backdrop-blur-sm" />
-      
-      {/* Mute/Unmute Button */}
-      <button
-        onClick={toggleMute}
-        className="absolute top-24 right-6 z-20 p-3 rounded-full bg-card/80 hover:bg-card transition-colors border border-border"
-        aria-label={isMuted ? "Unmute" : "Mute"}
-      >
-        {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
-      </button>
+      <div className="absolute inset-0 bg-background/40" />
       
       <div className="container mx-auto px-6 py-20 relative z-10">
         <div className="max-w-3xl mx-auto text-center">
