@@ -39,23 +39,23 @@ const About = () => {
                 About Me
               </p>
               <h2 className="text-3xl md:text-4xl font-light tracking-tight text-foreground mb-6">
-                Passionate About
-                <span className="block font-medium">Sonic Excellence</span>
+                Fresh Perspective,
+                <span className="block font-medium">Boundless Dedication</span>
               </h2>
               <div className="space-y-4 text-muted-foreground leading-relaxed">
                 <p>
-                  With over a decade of experience in the audio industry, I've had the 
-                  privilege of working with talented artists across genres—from intimate 
-                  acoustic sessions to full-scale productions.
+                  I'm an emerging sound engineer stepping into the world of audio with 
+                  an unwavering passion for music and an insatiable desire to learn. 
+                  Every project is an opportunity to grow and deliver my absolute best.
                 </p>
                 <p>
-                  My approach combines technical precision with creative intuition. I believe 
-                  every project deserves individual attention and a personalized touch that 
-                  honors the artist's unique vision.
+                  What I may lack in years, I make up for with dedication, attention to 
+                  detail, and a fresh creative perspective. I treat every track as if it 
+                  were my own masterpiece—because your music deserves nothing less.
                 </p>
                 <p>
-                  Based in Los Angeles, I work with clients worldwide, bringing warmth, 
-                  clarity, and professional polish to every mix and master.
+                  Specializing in Tamil and Malayalam music, I bring cultural understanding 
+                  and a deep appreciation for regional sounds to every mix and master.
                 </p>
               </div>
             </div>
