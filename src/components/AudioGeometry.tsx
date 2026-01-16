@@ -1,4 +1,4 @@
-import { useRef, useState, useMemo } from "react";
+import { useRef, useState, useMemo, forwardRef } from "react";
 import { Canvas, useFrame, useThree, extend } from "@react-three/fiber";
 import { Float, Stars } from "@react-three/drei";
 import * as THREE from "three";
@@ -182,7 +182,7 @@ interface AnimatedMeshProps {
   scrollProgress: number;
 }
 
-const AnimatedMesh = ({ scrollProgress }: AnimatedMeshProps) => {
+const AnimatedMesh = forwardRef<THREE.Group, AnimatedMeshProps>(({ scrollProgress }, ref) => {
   const meshRef = useRef<THREE.Mesh>(null);
   const materialRef = useRef<AtmosWaveMaterial>(null);
   const { mouse, viewport } = useThree();
@@ -232,19 +232,23 @@ const AnimatedMesh = ({ scrollProgress }: AnimatedMeshProps) => {
   });
 
   return (
-    <mesh
-      ref={meshRef}
-      onPointerOver={() => setHovered(true)}
-      onPointerOut={() => setHovered(false)}
-    >
-      <icosahedronGeometry args={[1.8, 128]} />
-      <atmosWaveMaterial ref={materialRef} />
-    </mesh>
+    <group ref={ref}>
+      <mesh
+        ref={meshRef}
+        onPointerOver={() => setHovered(true)}
+        onPointerOut={() => setHovered(false)}
+      >
+        <icosahedronGeometry args={[1.8, 128]} />
+        <atmosWaveMaterial ref={materialRef} />
+      </mesh>
+    </group>
   );
-};
+});
+
+AnimatedMesh.displayName = "AnimatedMesh";
 
 // Dolby Atmos spatial audio rings
-const AtmosRings = () => {
+const AtmosRings = forwardRef<THREE.Group>((_, ref) => {
   const ringsRef = useRef<THREE.Group>(null);
   
   useFrame((state) => {
@@ -272,23 +276,27 @@ const AtmosRings = () => {
   }, []);
 
   return (
-    <group ref={ringsRef}>
-      {rings.map((ring, index) => (
-        <mesh key={index} rotation={[Math.PI / 2 + index * 0.3, index * 0.2, 0]}>
-          <torusGeometry args={[ring.radius, ring.tube, 16, 100]} />
-          <meshBasicMaterial 
-            color={ring.color} 
-            transparent 
-            opacity={ring.opacity}
-          />
-        </mesh>
-      ))}
+    <group ref={ref}>
+      <group ref={ringsRef}>
+        {rings.map((ring, index) => (
+          <mesh key={index} rotation={[Math.PI / 2 + index * 0.3, index * 0.2, 0]}>
+            <torusGeometry args={[ring.radius, ring.tube, 16, 100]} />
+            <meshBasicMaterial 
+              color={ring.color} 
+              transparent 
+              opacity={ring.opacity}
+            />
+          </mesh>
+        ))}
+      </group>
     </group>
   );
-};
+});
+
+AtmosRings.displayName = "AtmosRings";
 
 // Floating audio particles
-const AudioParticles = () => {
+const AudioParticles = forwardRef<THREE.Group>((_, ref) => {
   const particlesRef = useRef<THREE.Points>(null);
   
   const particlePositions = useMemo(() => {
@@ -313,25 +321,29 @@ const AudioParticles = () => {
   });
 
   return (
-    <points ref={particlesRef}>
-      <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          count={200}
-          array={particlePositions}
-          itemSize={3}
+    <group ref={ref}>
+      <points ref={particlesRef}>
+        <bufferGeometry>
+          <bufferAttribute
+            attach="attributes-position"
+            count={200}
+            array={particlePositions}
+            itemSize={3}
+          />
+        </bufferGeometry>
+        <pointsMaterial
+          size={0.02}
+          color="#e94560"
+          transparent
+          opacity={0.6}
+          sizeAttenuation
         />
-      </bufferGeometry>
-      <pointsMaterial
-        size={0.02}
-        color="#e94560"
-        transparent
-        opacity={0.6}
-        sizeAttenuation
-      />
-    </points>
+      </points>
+    </group>
   );
-};
+});
+
+AudioParticles.displayName = "AudioParticles";
 
 interface AudioGeometryProps {
   scrollProgress: number;
